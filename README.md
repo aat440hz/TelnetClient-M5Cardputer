@@ -48,5 +48,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 -Acknowledgments
 
 This sketch was created for educational purposes and is based on the M5Cardputer library.
-M5Stack - https://github.com/m5stack/M5Core2
+M5Stack - https://github.com/m5stack/M5Cardputer
 Feel free to customize and extend this sketch according to your project requirements.

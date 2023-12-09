@@ -17,9 +17,13 @@ void setup() {
     M5Cardputer.begin(cfg, true);
     M5Cardputer.Display.setRotation(1);
     M5Cardputer.Display.setTextSize(0.5);
-    M5Cardputer.Display.drawRect(0, 0, M5Cardputer.Display.width(), M5Cardputer.Display.height() - 28, GREEN);
+
+    // Remove the following lines to eliminate the green outline
+    // M5Cardputer.Display.drawRect(0, 0, M5Cardputer.Display.width(), M5Cardputer.Display.height() - 28, GREEN);
+    // M5Cardputer.Display.fillRect(0, M5Cardputer.Display.height() - 4, M5Cardputer.Display.width(), 4, GREEN);
+
     M5Cardputer.Display.setTextFont(&fonts::FreeMono12pt7b);
-    M5Cardputer.Display.fillRect(0, M5Cardputer.Display.height() - 4, M5Cardputer.Display.width(), 4, GREEN);
+
     canvas.setTextFont(&fonts::FreeMono12pt7b);
     canvas.setTextSize(0.5);
     canvas.createSprite(M5Cardputer.Display.width() - 8, M5Cardputer.Display.height() - 36);

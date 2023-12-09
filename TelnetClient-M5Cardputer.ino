@@ -24,7 +24,6 @@ void setup() {
     canvas.setTextSize(0.5);
     canvas.createSprite(M5Cardputer.Display.width() - 8, M5Cardputer.Display.height() - 36);
     canvas.setTextScroll(true);
-    // canvas.println("Press Key and Enter to Input Text");
     canvas.pushSprite(4, 4);
     M5Cardputer.Display.drawString(data, 4, M5Cardputer.Display.height() - 24);
 
@@ -57,7 +56,7 @@ void loop() {
             }
 
             if (status.enter) {
-                String message = data.substring(2);
+                String message = data.substring(2) + "\n"; // Add a newline character to the message
                 telnetClient.write(message.c_str());  // Send message to Telnet server
 
                 // Display sent message on canvas

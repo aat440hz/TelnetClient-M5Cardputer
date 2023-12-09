@@ -64,7 +64,7 @@ void loop() {
                 telnetClient.write(message.c_str());  // Send message to Telnet server
 
                 // Display sent message on canvas
-                canvas.println("> " + message);
+                canvas.println(message);
                 canvas.pushSprite(4, 4); // Update the display with new canvas content
 
                 data = "> ";

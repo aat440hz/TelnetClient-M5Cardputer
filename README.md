@@ -42,6 +42,8 @@ This sketch initializes the M5Cardputer, connects to the Wi-Fi network, and esta
 Received messages from the Telnet server are displayed on the M5Cardputer's screen.
 
 https://github.com/aat440hz/TelnetServer-M5StickCPlus
+https://github.com/aat440hz/RF433-TelnetChatMorseCode-M5StickCPlus
+https://github.com/aat440hz/RF433-TelnetChat-M5StickCPlus
 
 -License
 

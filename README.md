@@ -61,6 +61,8 @@ Feel free to customize and extend this sketch according to your project requirem
 Here is a list of Telnet servers online you can test this script out with!
 
 horizons.jpl.nasa.gov port 6775
+
 telehack.com port 23
+
 resort.org port 2323
 

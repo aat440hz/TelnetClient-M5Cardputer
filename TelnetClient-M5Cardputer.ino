@@ -60,11 +60,11 @@ void loop() {
             }
 
             if (status.enter) {
-                String message = data.substring(2) + "\n"; // Add a newline character to the message
+                String message = data.substring(2) + "\r\n"; // Use "\r\n" for newline
                 telnetClient.write(message.c_str());  // Send message to Telnet server
 
                 // Display sent message on canvas
-                canvas.println(message);
+                canvas.print(message); // Use print, not println, to avoid extra line
                 canvas.pushSprite(4, 4); // Update the display with new canvas content
 
                 data = "> ";
@@ -78,11 +78,14 @@ void loop() {
     // Read data from Telnet server and display it on canvas
     while (telnetClient.available()) {
         char c = telnetClient.read();
-        canvas.print(c); // Display received character on canvas
 
-        // Check for newline character to refresh the canvas
+        // Check for newline character
         if (c == '\n') {
-            canvas.pushSprite(4, 4); // Update the display with new canvas content
+            canvas.println(); // Move to the next line
+        } else {
+            canvas.print(c); // Display received character on canvas
         }
+
+        canvas.pushSprite(4, 4); // Update the display with new canvas content
     }
 }

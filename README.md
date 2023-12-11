@@ -56,3 +56,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 This sketch was created for educational purposes and is based on the M5Cardputer library.
 M5Stack - https://github.com/m5stack/M5Cardputer
 Feel free to customize and extend this sketch according to your project requirements.
+
+-Telnet Servers
+Here is a list of Telnet servers online you can test this script out with!
+
+horizons.jpl.nasa.gov port 6775
+telehack.com port 23
+resort.org port 2323
+

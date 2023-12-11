@@ -22,9 +22,8 @@ Upload the provided sketch (M5Cardputer_Telnet_Client.ino) to your M5Cardputer b
 
 Replace the following placeholders in the sketch with your Wi-Fi and Telnet server information:
 
-cpp
-
 Copy code
+
 const char* ssid = "Your_SSID";  // Replace with your WiFi SSID
 const char* password = "Your_Password";  // Replace with your WiFi password
 

@@ -22,13 +22,14 @@ Upload the provided sketch (M5Cardputer_Telnet_Client.ino) to your M5Cardputer b
 
 Replace the following placeholders in the sketch with your Wi-Fi and Telnet server information:
 
-Copy code
-
 const char* ssid = "Your_SSID";  // Replace with your WiFi SSID
+
 const char* password = "Your_Password";  // Replace with your WiFi password
 
 const char* host = "Your_Telnet_Server_IP"; // Replace with your Telnet server address
+
 const uint16_t port = 23; // Telnet default port
+
 Upload the modified sketch to your M5Cardputer board.
 
 The M5Cardputer should connect to the specified Wi-Fi network and the Telnet server.

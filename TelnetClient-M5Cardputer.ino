@@ -1,6 +1,5 @@
 #include <WiFi.h>
 #include "M5Cardputer.h"
-#include "M5GFX.h"
 
 const char* ssid = "Telnet_AP";  // Replace with your WiFi SSID
 const char* password = "66666666";  // Replace with your WiFi password
@@ -12,24 +11,15 @@ const uint16_t port = 23; // Telnet default port
 M5Canvas canvas(&M5Cardputer.Display);
 String data = "> ";
 
+// Add a variable to keep track of the Y position
+int cursorY = 0;
+const int lineHeight = 8;  // Height of a text line, adjust as needed
+
 void setup() {
     auto cfg = M5.config();
     M5Cardputer.begin(cfg, true);
     M5Cardputer.Display.setRotation(1);
-    M5Cardputer.Display.setTextSize(0.5);
-
-    // Remove the following lines to eliminate the green outline
-    // M5Cardputer.Display.drawRect(0, 0, M5Cardputer.Display.width(), M5Cardputer.Display.height() - 28, GREEN);
-    // M5Cardputer.Display.fillRect(0, M5Cardputer.Display.height() - 4, M5Cardputer.Display.width(), 4, GREEN);
-
-    M5Cardputer.Display.setTextFont(&fonts::FreeMono12pt7b);
-
-    canvas.setTextFont(&fonts::FreeMono12pt7b);
-    canvas.setTextSize(0.5);
-    canvas.createSprite(M5Cardputer.Display.width() - 8, M5Cardputer.Display.height() - 36);
-    canvas.setTextScroll(true);
-    canvas.pushSprite(4, 4);
-    M5Cardputer.Display.drawString(data, 4, M5Cardputer.Display.height() - 24);
+    M5Cardputer.Display.setTextSize(1); // Set text size
 
     // Connect to WiFi
     WiFi.begin(ssid, password);
@@ -41,6 +31,9 @@ void setup() {
     if (!telnetClient.connect(host, port)) {
         // Handle connection failure
     }
+
+    // Initialize the cursor Y position
+    cursorY = M5Cardputer.Display.getCursorY();
 }
 
 void loop() {
@@ -53,39 +46,50 @@ void loop() {
 
             for (auto i : status.word) {
                 data += i;
+                M5Cardputer.Display.print(i); // Display the character as it's typed
+                cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
             }
 
             if (status.del && data.length() > 2) {
                 data.remove(data.length() - 1);
+                M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX() - 6, M5Cardputer.Display.getCursorY());
+                M5Cardputer.Display.print(" "); // Print a space to erase the last character
+                M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX() - 6, M5Cardputer.Display.getCursorY());
+                cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
             }
 
             if (status.enter) {
                 String message = data.substring(2) + "\r\n"; // Use "\r\n" for newline
                 telnetClient.write(message.c_str());  // Send message to Telnet server
 
-                // Display sent message on canvas
-                canvas.print(message); // Use print, not println, to avoid extra line
-                canvas.pushSprite(4, 4); // Update the display with new canvas content
-
                 data = "> ";
+                M5Cardputer.Display.print('\n'); // Move to the next line
+                cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
             }
-
-            M5Cardputer.Display.fillRect(0, M5Cardputer.Display.height() - 28, M5Cardputer.Display.width(), 25, BLACK);
-            M5Cardputer.Display.drawString(data, 4, M5Cardputer.Display.height() - 24);
         }
     }
 
-    // Read data from Telnet server and display it on canvas
+    // Check if the cursor has reached the bottom of the display
+    if (cursorY > M5Cardputer.Display.height() - lineHeight) {
+        // Scroll the display up by one line
+        M5Cardputer.Display.scroll(0, -lineHeight);
+        
+        // Reset the cursor to the new line position
+        cursorY -= lineHeight;
+        M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX(), cursorY);
+    }
+
+    // Read data from Telnet server and display it on the screen
     while (telnetClient.available()) {
         char c = telnetClient.read();
+        M5Cardputer.Display.print(c);
+        cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
 
-        // Check for newline character
-        if (c == '\n') {
-            canvas.println(); // Move to the next line
-        } else {
-            canvas.print(c); // Display received character on canvas
+        // Scroll the display if needed
+        if (cursorY > M5Cardputer.Display.height() - lineHeight) {
+            M5Cardputer.Display.scroll(0, -lineHeight);
+            cursorY -= lineHeight;
+            M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX(), cursorY);
         }
-
-        canvas.pushSprite(4, 4); // Update the display with new canvas content
     }
 }

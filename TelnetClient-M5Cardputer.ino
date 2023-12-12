@@ -1,8 +1,8 @@
 #include <WiFi.h>
 #include "M5Cardputer.h"
 
-const char* ssid = "SSID";  // Replace with your WiFi SSID
-const char* password = "password";  // Replace with your WiFi password
+const char* ssid = "Your_SSID";  // Replace with your WiFi SSID
+const char* password = "Your_Password";  // Replace with your WiFi password
 
 WiFiClient telnetClient;
 const char* host = "telehack.com"; // Replace with your Telnet server address

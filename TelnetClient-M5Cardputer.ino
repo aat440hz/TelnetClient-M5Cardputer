@@ -1,11 +1,11 @@
 #include <WiFi.h>
 #include "M5Cardputer.h"
 
-const char* ssid = "Telnet_AP";  // Replace with your WiFi SSID
-const char* password = "66666666";  // Replace with your WiFi password
+const char* ssid = "SSID";  // Replace with your WiFi SSID
+const char* password = "password";  // Replace with your WiFi password
 
 WiFiClient telnetClient;
-const char* host = "192.168.4.1"; // Replace with your Telnet server address
+const char* host = "telehack.com"; // Replace with your Telnet server address
 const uint16_t port = 23; // Telnet default port
 
 M5Canvas canvas(&M5Cardputer.Display);
@@ -80,16 +80,20 @@ void loop() {
     }
 
     // Read data from Telnet server and display it on the screen
-    while (telnetClient.available()) {
-        char c = telnetClient.read();
+while (telnetClient.available()) {
+    char c = telnetClient.read();
+
+    // Check if 'c' is an ASCII character
+    if (c >= 0 && c <= 127) {
         M5Cardputer.Display.print(c);
         cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
+    }
 
-        // Scroll the display if needed
-        if (cursorY > M5Cardputer.Display.height() - lineHeight) {
-            M5Cardputer.Display.scroll(0, -lineHeight);
-            cursorY -= lineHeight;
-            M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX(), cursorY);
+    // Scroll the display if needed
+    if (cursorY > M5Cardputer.Display.height() - lineHeight) {
+        M5Cardputer.Display.scroll(0, -lineHeight);
+        cursorY -= lineHeight;
+        M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX(), cursorY);
         }
     }
 }

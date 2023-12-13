@@ -1,19 +1,26 @@
 #include <WiFi.h>
 #include "M5Cardputer.h"
 
+// WiFi and Telnet configurations
 const char* ssid = "Your_SSID";  // Replace with your WiFi SSID
 const char* password = "Your_Password";  // Replace with your WiFi password
-
-WiFiClient telnetClient;
 const char* host = "telehack.com"; // Replace with your Telnet server address
 const uint16_t port = 23; // Telnet default port
 
+// M5Cardputer setup
 M5Canvas canvas(&M5Cardputer.Display);
 String data = "> ";
-
-// Add a variable to keep track of the Y position
 int cursorY = 0;
-const int lineHeight = 8;  // Height of a text line, adjust as needed
+const int lineHeight = 8;
+
+// Telnet Command Codes
+const byte IAC = 255;
+const byte DO = 253;
+const byte DONT = 254;
+const byte WILL = 251;
+const byte WONT = 252;
+
+WiFiClient telnetClient;
 
 void setup() {
     auto cfg = M5.config();
@@ -80,20 +87,43 @@ void loop() {
     }
 
     // Read data from Telnet server and display it on the screen
-while (telnetClient.available()) {
-    char c = telnetClient.read();
+    while (telnetClient.available()) {
+        char c = telnetClient.read();
 
-    // Check if 'c' is an ASCII character
-    if (c >= 0 && c <= 127) {
-        M5Cardputer.Display.print(c);
-        cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
-    }
+        if (c == IAC) {
+            handleTelnetCommand();
+        } else if (c >= 0 && c <= 127) {
+            M5Cardputer.Display.print(c);
+            cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
+        }
 
-    // Scroll the display if needed
-    if (cursorY > M5Cardputer.Display.height() - lineHeight) {
-        M5Cardputer.Display.scroll(0, -lineHeight);
-        cursorY -= lineHeight;
-        M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX(), cursorY);
+        // Scroll the display if needed
+        if (cursorY > M5Cardputer.Display.height() - lineHeight) {
+            M5Cardputer.Display.scroll(0, -lineHeight);
+            cursorY -= lineHeight;
+            M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX(), cursorY);
         }
     }
+}
+
+void handleTelnetCommand() {
+    byte command = telnetClient.read();
+    byte option = telnetClient.read();
+
+    switch (command) {
+        case DO:
+        case DONT:
+            respondToCommand(WONT, option);
+            break;
+        case WILL:
+        case WONT:
+            respondToCommand(DONT, option);
+            break;
+    }
+}
+
+void respondToCommand(byte response, byte option) {
+    telnetClient.write(IAC);
+    telnetClient.write(response);
+    telnetClient.write(option);
 }

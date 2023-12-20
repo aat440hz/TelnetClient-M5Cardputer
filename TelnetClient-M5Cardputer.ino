@@ -12,6 +12,8 @@ M5Canvas canvas(&M5Cardputer.Display);
 String data = "> ";
 int cursorY = 0;
 const int lineHeight = 8;
+unsigned long lastKeyPressMillis = 0;
+const unsigned long debounceDelay = 200; // Adjust debounce delay as needed
 
 // Telnet Command Codes
 const byte IAC = 255;
@@ -46,32 +48,37 @@ void setup() {
 void loop() {
     M5Cardputer.update();
 
-    // Handle keyboard input
+    // Handle keyboard input with debounce
     if (M5Cardputer.Keyboard.isChange()) {
         if (M5Cardputer.Keyboard.isPressed()) {
-            Keyboard_Class::KeysState status = M5Cardputer.Keyboard.keysState();
+            unsigned long currentMillis = millis();
+            if (currentMillis - lastKeyPressMillis >= debounceDelay) {
+                Keyboard_Class::KeysState status = M5Cardputer.Keyboard.keysState();
 
-            for (auto i : status.word) {
-                data += i;
-                M5Cardputer.Display.print(i); // Display the character as it's typed
-                cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
-            }
+                for (auto i : status.word) {
+                    data += i;
+                    M5Cardputer.Display.print(i); // Display the character as it's typed
+                    cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
+                }
 
-            if (status.del && data.length() > 2) {
-                data.remove(data.length() - 1);
-                M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX() - 6, M5Cardputer.Display.getCursorY());
-                M5Cardputer.Display.print(" "); // Print a space to erase the last character
-                M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX() - 6, M5Cardputer.Display.getCursorY());
-                cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
-            }
+                if (status.del && data.length() > 2) {
+                    data.remove(data.length() - 1);
+                    M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX() - 6, M5Cardputer.Display.getCursorY());
+                    M5Cardputer.Display.print(" "); // Print a space to erase the last character
+                    M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX() - 6, M5Cardputer.Display.getCursorY());
+                    cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
+                }
 
-            if (status.enter) {
-                String message = data.substring(2) + "\r\n"; // Use "\r\n" for newline
-                telnetClient.write(message.c_str());  // Send message to Telnet server
+                if (status.enter) {
+                    String message = data.substring(2) + "\r\n"; // Use "\r\n" for newline
+                    telnetClient.write(message.c_str());  // Send message to Telnet server
 
-                data = "> ";
-                M5Cardputer.Display.print('\n'); // Move to the next line
-                cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
+                    data = "> ";
+                    M5Cardputer.Display.print('\n'); // Move to the next line
+                    cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
+                }
+
+                lastKeyPressMillis = currentMillis;
             }
         }
     }
@@ -80,7 +87,7 @@ void loop() {
     if (cursorY > M5Cardputer.Display.height() - lineHeight) {
         // Scroll the display up by one line
         M5Cardputer.Display.scroll(0, -lineHeight);
-        
+
         // Reset the cursor to the new line position
         cursorY -= lineHeight;
         M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX(), cursorY);

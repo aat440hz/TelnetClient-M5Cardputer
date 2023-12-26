@@ -24,6 +24,9 @@ const byte WONT = 252;
 
 WiFiClient telnetClient;
 
+// Compile-time flag for ANSI sequence filtering
+const bool ansiFilteringEnabled = true;  // Set to true or false based on server requirements
+
 void setup() {
     auto cfg = M5.config();
     M5Cardputer.begin(cfg, true);
@@ -39,6 +42,9 @@ void setup() {
     // Connect to Telnet server
     if (!telnetClient.connect(host, port)) {
         // Handle connection failure
+        M5Cardputer.Display.println("Failed to connect");
+    } else {
+        M5Cardputer.Display.println("Connected");
     }
 
     // Initialize the cursor Y position
@@ -53,18 +59,19 @@ void loop() {
         if (M5Cardputer.Keyboard.isPressed()) {
             unsigned long currentMillis = millis();
             if (currentMillis - lastKeyPressMillis >= debounceDelay) {
+                lastKeyPressMillis = currentMillis; // Update the last key press time
+                
                 Keyboard_Class::KeysState status = M5Cardputer.Keyboard.keysState();
-
                 for (auto i : status.word) {
-                    data += i;
-                    M5Cardputer.Display.print(i); // Display the character as it's typed
+                    data += i; // Add character to the data buffer
+                    M5Cardputer.Display.print(i); // Display the character
                     cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
                 }
 
                 if (status.del && data.length() > 2) {
                     data.remove(data.length() - 1);
                     M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX() - 6, M5Cardputer.Display.getCursorY());
-                    M5Cardputer.Display.print(" "); // Print a space to erase the last character
+                    M5Cardputer.Display.print(" ");
                     M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX() - 6, M5Cardputer.Display.getCursorY());
                     cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
                 }
@@ -77,38 +84,42 @@ void loop() {
                     M5Cardputer.Display.print('\n'); // Move to the next line
                     cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
                 }
-
-                lastKeyPressMillis = currentMillis;
             }
         }
     }
 
     // Check if the cursor has reached the bottom of the display
     if (cursorY > M5Cardputer.Display.height() - lineHeight) {
-        // Scroll the display up by one line
         M5Cardputer.Display.scroll(0, -lineHeight);
-
-        // Reset the cursor to the new line position
         cursorY -= lineHeight;
         M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX(), cursorY);
     }
 
-    // Read data from Telnet server and display it on the screen
+    // Read data from Telnet server and display it on the screen, with optional ANSI sequence filtering
+    bool isAnsiSequence = false;  // Track if currently processing an ANSI sequence
     while (telnetClient.available()) {
         char c = telnetClient.read();
 
         if (c == IAC) {
             handleTelnetCommand();
-        } else if (c >= 0 && c <= 127) {
+        } else if (ansiFilteringEnabled && c == '\033') { // Start of an ANSI sequence
+            isAnsiSequence = true;
+        } else if (isAnsiSequence) {
+            if (isalpha(c)) { // Look for the end of the ANSI sequence
+                isAnsiSequence = false; // End of ANSI sequence
+            }
+            // Don't print ANSI sequence characters
+        } else {
+            // Print all characters as ANSI filtering is off or on based on the flag
             M5Cardputer.Display.print(c);
             cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
-        }
 
-        // Scroll the display if needed
-        if (cursorY > M5Cardputer.Display.height() - lineHeight) {
-            M5Cardputer.Display.scroll(0, -lineHeight);
-            cursorY -= lineHeight;
-            M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX(), cursorY);
+            // Scroll the display if needed
+            if (cursorY > M5Cardputer.Display.height() - lineHeight) {
+                M5Cardputer.Display.scroll(0, -lineHeight);
+                cursorY -= lineHeight;
+                M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX(), cursorY);
+            }
         }
     }
 }

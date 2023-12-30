@@ -2,8 +2,8 @@
 #include "M5Cardputer.h"
 
 // WiFi configurations
-const char* ssid = "SETUP-8CD3";  // Replace with your WiFi SSID
-const char* password = "career6174brace";  // Replace with your WiFi password
+const char* ssid = "Your_SSID";  // Replace with your WiFi SSID
+const char* password = "Your_Password";  // Replace with your WiFi password
 
 // Variables for server address and port
 String serverAddress;

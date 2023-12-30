@@ -2,9 +2,9 @@
 #include "M5Cardputer.h"
 
 // WiFi and Telnet configurations
-const char* ssid = "Your_SSID";  // Replace with your WiFi SSID
-const char* password = "Your_Password";  // Replace with your WiFi password
-const char* host = "telehack.com"; // Replace with your Telnet server address
+const char* ssid = "SETUP-8CD3";  // Replace with your WiFi SSID
+const char* password = "career6174brace";  // Replace with your WiFi password
+const char* host = "192.168.0.192"; // Replace with your Telnet server address
 const uint16_t port = 23; // Telnet default port
 
 // M5Cardputer setup
@@ -54,72 +54,83 @@ void setup() {
 void loop() {
     M5Cardputer.update();
 
-    // Handle keyboard input with debounce
-    if (M5Cardputer.Keyboard.isChange()) {
-        if (M5Cardputer.Keyboard.isPressed()) {
-            unsigned long currentMillis = millis();
-            if (currentMillis - lastKeyPressMillis >= debounceDelay) {
-                lastKeyPressMillis = currentMillis; // Update the last key press time
-                
-                Keyboard_Class::KeysState status = M5Cardputer.Keyboard.keysState();
-                for (auto i : status.word) {
+    // Check for and handle any user input first
+    handleUserInput(); // A new function to encapsulate all user input handling
+
+    // Handle any incoming data from the server
+    readAndProcessServerData();
+}
+
+void handleUserInput() {
+    bool controlMode = M5Cardputer.BtnA.isPressed();
+    if (M5Cardputer.Keyboard.isChange() && M5Cardputer.Keyboard.isPressed()) {
+        unsigned long currentMillis = millis();
+        if (currentMillis - lastKeyPressMillis >= debounceDelay) {
+            lastKeyPressMillis = currentMillis; // Update the last key press time
+
+            Keyboard_Class::KeysState status = M5Cardputer.Keyboard.keysState();
+            for (auto i : status.word) {
+                if (controlMode) {
+                    // If BtnA is pressed, modify the character to a control character
+                    char ctrlChar = mapToControlCharacter(i);
+                    telnetClient.write(ctrlChar);  // Send control character to Telnet server
+
+                    // Display the conventional representation for control characters (e.g., '^C')
+                    M5Cardputer.Display.print('^');
+                    M5Cardputer.Display.print(toupper(i)); // Display the uppercase letter
+                } else {
+                    // Normal character handling
                     data += i; // Add character to the data buffer
                     M5Cardputer.Display.print(i); // Display the character
-                    cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
                 }
+                cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
+            }
 
-                if (status.del && data.length() > 2) {
-                    data.remove(data.length() - 1);
-                    M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX() - 6, M5Cardputer.Display.getCursorY());
-                    M5Cardputer.Display.print(" ");
-                    M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX() - 6, M5Cardputer.Display.getCursorY());
-                    cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
-                }
+            if (status.del && data.length() > 2) {
+                data.remove(data.length() - 1);
+                M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX() - 6, M5Cardputer.Display.getCursorY());
+                M5Cardputer.Display.print(" ");
+                M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX() - 6, M5Cardputer.Display.getCursorY());
+                cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
+            }
 
-                if (status.enter) {
-                    String message = data.substring(2) + "\r\n"; // Use "\r\n" for newline
-                    telnetClient.write(message.c_str());  // Send message to Telnet server
+            if (status.enter) {
+                String message = data.substring(2) + "\r\n"; // Use "\r\n" for newline
+                telnetClient.write(message.c_str());  // Send message to Telnet server
 
-                    data = "> ";
-                    M5Cardputer.Display.print('\n'); // Move to the next line
-                    cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
-                }
+                data = "> ";
+                M5Cardputer.Display.print('\n'); // Move to the next line
+                cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
             }
         }
     }
+}
 
-    // Check if the cursor has reached the bottom of the display
-    if (cursorY > M5Cardputer.Display.height() - lineHeight) {
-        M5Cardputer.Display.scroll(0, -lineHeight);
-        cursorY -= lineHeight;
-        M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX(), cursorY);
-    }
-
-    // Read data from Telnet server and display it on the screen, with optional ANSI sequence filtering
-    bool isAnsiSequence = false;  // Track if currently processing an ANSI sequence
+void readAndProcessServerData() {
+    bool isAnsiSequence = false; // Track if currently processing an ANSI sequence
     while (telnetClient.available()) {
         char c = telnetClient.read();
 
         if (c == IAC) {
+            // Handle Telnet command received from the server
             handleTelnetCommand();
         } else if (ansiFilteringEnabled && c == '\033') { // Start of an ANSI sequence
             isAnsiSequence = true;
         } else if (isAnsiSequence) {
-            if (isalpha(c)) { // Look for the end of the ANSI sequence
+            if (isalpha(c) || c == '@') { // End of an ANSI sequence ('@' is included for edge cases)
                 isAnsiSequence = false; // End of ANSI sequence
             }
             // Don't print ANSI sequence characters
         } else {
-            // Print all characters as ANSI filtering is off or on based on the flag
             M5Cardputer.Display.print(c);
             cursorY = M5Cardputer.Display.getCursorY(); // Update cursor Y position
+        }
 
-            // Scroll the display if needed
-            if (cursorY > M5Cardputer.Display.height() - lineHeight) {
-                M5Cardputer.Display.scroll(0, -lineHeight);
-                cursorY -= lineHeight;
-                M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX(), cursorY);
-            }
+        // Check for display scrolling
+        if (cursorY > M5Cardputer.Display.height() - lineHeight) {
+            M5Cardputer.Display.scroll(0, -lineHeight);
+            cursorY -= lineHeight;
+            M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX(), cursorY);
         }
     }
 }
@@ -144,4 +155,16 @@ void respondToCommand(byte response, byte option) {
     telnetClient.write(IAC);
     telnetClient.write(response);
     telnetClient.write(option);
+}
+
+char mapToControlCharacter(char key) {
+    // Map alphabetic characters to ASCII control characters (e.g., Ctrl + A to 1)
+    if (key >= 'a' && key <= 'z') {
+        return key - 'a' + 1; // 'a' maps to 1 ('Ctrl+A'), 'z' maps to 26 ('Ctrl+Z')
+    } else if (key >= 'A' && key <= 'Z') {
+        return key - 'A' + 1; // 'A' maps to 1 ('Ctrl+A'), 'Z' maps to 26 ('Ctrl+Z')
+    } else {
+        // Return the original key if it's not alphabetic
+        return key;
+    }
 }

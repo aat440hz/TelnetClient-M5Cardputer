@@ -2,8 +2,8 @@
 #include "M5Cardputer.h"
 
 // WiFi and Telnet configurations
-const char* ssid = "SETUP-8CD3";  // Replace with your WiFi SSID
-const char* password = "career6174brace";  // Replace with your WiFi password
+const char* ssid = "Your_SSID";  // Replace with your WiFi SSID
+const char* password = "Your_Password";  // Replace with your WiFi password
 const char* host = "192.168.0.192"; // Replace with your Telnet server address
 const uint16_t port = 23; // Telnet default port
 

@@ -1,11 +1,13 @@
 #include <WiFi.h>
 #include "M5Cardputer.h"
 
-// WiFi and Telnet configurations
-const char* ssid = "Your_SSID";  // Replace with your WiFi SSID
-const char* password = "Your_Password";  // Replace with your WiFi password
-const char* host = "192.168.0.192"; // Replace with your Telnet server address
-const uint16_t port = 23; // Telnet default port
+// WiFi configurations
+const char* ssid = "SETUP-8CD3";  // Replace with your WiFi SSID
+const char* password = "career6174brace";  // Replace with your WiFi password
+
+// Variables for server address and port
+String serverAddress;
+uint16_t port = 23; // Default Telnet port
 
 // M5Cardputer setup
 M5Canvas canvas(&M5Cardputer.Display);
@@ -39,12 +41,17 @@ void setup() {
         delay(500);
     }
 
+    // Prompt for server address and optional port
+    M5Cardputer.Display.print("Address:Port: ");
+    String serverInput = waitForInput();
+    parseServerInput(serverInput); // Parse and set serverAddress and port
+
     // Connect to Telnet server
-    if (!telnetClient.connect(host, port)) {
+    if (!telnetClient.connect(serverAddress.c_str(), port)) {
         // Handle connection failure
         M5Cardputer.Display.println("Failed to connect");
     } else {
-        M5Cardputer.Display.println("Connected");
+        M5Cardputer.Display.println("Connected to " + serverAddress + ":" + String(port));
     }
 
     // Initialize the cursor Y position
@@ -59,6 +66,59 @@ void loop() {
 
     // Handle any incoming data from the server
     readAndProcessServerData();
+}
+
+String waitForInput() {
+    String input = "";
+    M5Cardputer.Display.setCursor(90, cursorY); // Set initial cursor position for input
+    unsigned long lastKeyPressMillis = 0;
+    const unsigned long debounceDelay = 200;
+
+    while (!M5Cardputer.Keyboard.keysState().enter) {
+        M5Cardputer.update();
+        if (M5Cardputer.Keyboard.isChange()) {
+            Keyboard_Class::KeysState status = M5Cardputer.Keyboard.keysState();
+
+            if (status.del && input.length() > 0) {
+                input.remove(input.length() - 1);  // Remove last character from input
+                // Visually remove character from display:
+                M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX() - 6, cursorY);
+                M5Cardputer.Display.print(" ");
+                M5Cardputer.Display.setCursor(M5Cardputer.Display.getCursorX() - 6, cursorY);
+                lastKeyPressMillis = millis();
+            }
+
+            for (auto i : status.word) {
+                if (millis() - lastKeyPressMillis >= debounceDelay) {
+                    lastKeyPressMillis = millis(); // Update the last key press time
+
+                    if (isPrintable(i)) {
+                        input += i; // Append the character to input string
+                        M5Cardputer.Display.print(i); // Show the character on display
+                    }
+                }
+            }
+
+            if (status.enter) {
+                M5Cardputer.Display.println(); // Move to the next line
+                break; // Break the loop as enter has been pressed
+            }
+        }
+    }
+    return input;
+}
+
+void parseServerInput(String serverInput) {
+    int colonIndex = serverInput.indexOf(':');
+    if (colonIndex != -1) {
+        // Split the input into address and port
+        serverAddress = serverInput.substring(0, colonIndex);
+        String portStr = serverInput.substring(colonIndex + 1);
+        port = (portStr.length() > 0) ? portStr.toInt() : 23; // Use default port if none specified
+    } else {
+        serverAddress = serverInput; // Entire input is treated as address
+        port = 23; // Default to port 23
+    }
 }
 
 void handleUserInput() {
